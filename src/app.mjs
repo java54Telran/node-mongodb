@@ -5,7 +5,7 @@ const COLLECTION_COMMENTS_NAME = "comments";
 const mongoConnection = new MongoConnection(process.env.MONGO_URI, DB_NAME);
 const collectionMovies = mongoConnection.getCollection(COLLECTION_MOVIES_NAME);
 const collectionComments = mongoConnection.getCollection(COLLECTION_COMMENTS_NAME);
-collectionComments.aggregate([
+const query1 = collectionComments.aggregate([
  
   {
       '$lookup': {
@@ -27,7 +27,7 @@ collectionComments.aggregate([
           'newRoot': {
               '$mergeObjects': [
                   {
-                      'title': {
+                      'movie_title': {
                           '$arrayElemAt': [
                               '$movies.title', 0
                           ]
@@ -42,9 +42,9 @@ collectionComments.aggregate([
           'movie_id': 0
       }
   }
-]).toArray()
-  .then(data => console.log('query 1', data));
-collectionMovies.aggregate([
+]).toArray();
+  
+const query2 = collectionMovies.aggregate([
   {
       '$facet': {
           'avgImdbRating': [
@@ -87,4 +87,8 @@ collectionMovies.aggregate([
           'title': '$filteredAvgValues.title'
       }
   }
-]).toArray().then(data => console.log("query 2", data))
+]).toArray();
+Promise.all([query1, query2]).then(data => {
+    data.forEach((res, index) => console.log("query" + (index + 1), res));
+    mongoConnection.closeConnection();
+} )
